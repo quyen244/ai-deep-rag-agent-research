@@ -2,3 +2,5 @@ langgraph-supervisor
 langgraph 
 langchain-core
 python-dotenv
+langchain-openrouter
+langsmith
