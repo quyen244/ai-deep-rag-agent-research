@@ -8,29 +8,6 @@ def get_user_input():
     """
     Lấy input từ user (hiện đang dùng mock data)
     """
-    # TODO: Uncomment khi muốn dùng interactive
-    # print('[Step 1] : Ticker selection ')
-    # for idx , ticker in enumerate(get_args(tickers)):
-    #     print(f"     [{idx}]. {ticker}")
-    # input_idx = int(input('Please choose the ticker by inputing the index: '))
-    # input_ticker = get_args(tickers)[input_idx]
-    # 
-    # print('[Step 2] : Timeframe selection ')
-    # for idx , timeframe in enumerate(get_args(timeframes)):
-    #     print(f"     [{idx}]. {timeframe}")
-    # input_idx = int(input('Please choose the timeframe by inputing the index: '))
-    # input_timeframe = get_args(timeframes)[input_idx]
-    # 
-    # print('[Step 3] : Focus area selection ')
-    # for idx , area in enumerate(get_args(focus_area)):
-    #     print(f"     [{idx}]. {area}")
-    # input_idx = int(input('Please choose the focus area by inputing the index: '))
-    # input_focus_area = get_args(focus_area)[input_idx]
-    # 
-    # print('[Step 4] : Enter your question ')
-    # input_questions = input('Enter the question: ')
-    
-    # Mock data cho test
     return {
         'tickers': ['AAPL'],
         'timeframes': ['1y'],  # ⭐ Đổi từ '1D' thành '1y' để có dữ liệu

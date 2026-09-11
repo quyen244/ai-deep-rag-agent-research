@@ -1,6 +1,4 @@
 # supervisor.py
-import os
-from langchain_openrouter import ChatOpenRouter
 from langgraph_supervisor import create_supervisor
 from langgraph.graph import StateGraph, END, START
 from langsmith import traceable
@@ -24,26 +22,26 @@ def get_llm():
         base_url="https://openrouter.ai/api/v1",
         api_key=Config.OPENROUTER_API_KEY,
         timeout=120,  # ✅ Tăng timeout
-        max_retries=3,  # ✅ Thêm retry
+        max_retries=3,
+        model=Config.MODEL_NAME,
+                temperature=Config.temperature,
+                max_tokens=4096,
+                openrouter_api_key=Config.OPENROUTER_API_KEY,
+                timeout=120,  # ✅ Tăng timeout
+                max_retries=3,  # ✅ Thêm retry
+                default_headers={
+                    "HTTP-Referer": "http://localhost:8000",
+                    "X-Title": "Financial Analysis Agent",
+                }
     )
     
     if Config.LANGCHAIN_TRACING_V2:
         from langsmith.wrappers import wrap_openai
         client = wrap_openai(client)
-    
-    return ChatOpenRouter(
-        model=Config.MODEL_NAME,
-        temperature=Config.temperature,
-        max_tokens=4096,
-        openrouter_api_key=Config.OPENROUTER_API_KEY,
-        timeout=120,  # ✅ Tăng timeout
-        max_retries=3,  # ✅ Thêm retry
-        default_headers={
-            "HTTP-Referer": "http://localhost:8000",
-            "X-Title": "Financial Analysis Agent",
-        }
-    )
 
+    return client
+    
+    
 
 @traceable(name="build_supervisor", run_type="chain")
 def build_supervisor_with_tracing():
