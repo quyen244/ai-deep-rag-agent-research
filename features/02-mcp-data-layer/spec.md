@@ -1,6 +1,6 @@
 # MCP mock data layer
 
-Status: approved
+Status: implemented
 Owner: backend MCP and provider packages
 Depends on: 01-foundation
 Consumed by: 03-executor-agents

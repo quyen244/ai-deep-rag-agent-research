@@ -11,7 +11,7 @@
 ## Implementation sequence
 
 - [x] 01 Foundation: configuration, schemas, errors, and project packaging.
-- [ ] 02 MCP data layer: deterministic providers, FastMCP tools, and client adapter.
+- [x] 02 MCP data layer: deterministic providers, FastMCP tools, and client adapter.
 - [ ] 03 Executor agents: technical, fundamental, sentiment, and macro outputs.
 - [ ] 04 Orchestration and synthesis: routing, concurrent fan-out, collection, and structured report.
 - [ ] 06 Observability: structured logs, run correlation, metrics, and LangSmith metadata.
