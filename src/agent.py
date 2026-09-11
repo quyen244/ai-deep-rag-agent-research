@@ -1,19 +1,16 @@
 from langchain_openrouter import ChatOpenRouter
 from langgraph.prebuilt import create_react_agent
 from src.tools import (
-     get_ohlcv_data, calculate_technical_indicators,
-    get_financial_statements, calculate_fundamental_metrics,
-    get_news_sentiment
+     TECHNICAL_TOOLS , SENTIMENT_TOOLS , FUNDAMENTAL_TOOLS
 )
 from src.config import Config
 
 
 def create_technical_agent(model : ChatOpenRouter):
-    technical_tools = [get_ohlcv_data, calculate_technical_indicators]
     
     return create_react_agent(
         model=model,
-        tools=technical_tools,
+        tools=TECHNICAL_TOOLS,
         name="technical_analyst",
         prompt="""
         Bạn là chuyên gia phân tích kỹ thuật tài chính với 15 năm kinh nghiệm.
@@ -33,11 +30,10 @@ def create_technical_agent(model : ChatOpenRouter):
 
 def create_fundamental_agent(model: ChatOpenRouter):
     """Agent phân tích cơ bản"""
-    fundamental_tools = [get_financial_statements, calculate_fundamental_metrics]
     
     return create_react_agent(
         model=model,
-        tools=fundamental_tools,
+        tools=FUNDAMENTAL_TOOLS,
         name="fundamental_analyst",
         prompt="""
         Bạn là chuyên gia phân tích cơ bản từng làm tại các quỹ đầu tư hàng đầu.
@@ -56,11 +52,10 @@ def create_fundamental_agent(model: ChatOpenRouter):
 
 def create_sentiment_agent(model: ChatOpenRouter):
     """Agent phân tích cảm xúc thị trường"""
-    sentiment_tools = [get_news_sentiment]
     
     return create_react_agent(
         model=model,
-        tools=sentiment_tools,
+        tools=SENTIMENT_TOOLS,
         name="sentiment_analyst",
         prompt="""
         Bạn là chuyên gia phân tích tâm lý thị trường và tin tức.

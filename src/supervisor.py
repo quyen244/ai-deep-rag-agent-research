@@ -1,8 +1,10 @@
+# supervisor.py
+import os
 from langchain_openrouter import ChatOpenRouter
 from langgraph_supervisor import create_supervisor
-from langgraph.graph import StateGraph , START , END 
-from langgraph.prebuilt import create_react_agent
-
+from langgraph.graph import StateGraph, END, START
+from langsmith import traceable
+from langsmith.wrappers import wrap_openai
 
 from src.state import AgentState
 from src.agent import (
@@ -11,81 +13,84 @@ from src.agent import (
     create_sentiment_agent
 )
 from src.node import create_research_plan
-from src.config import Config
+from .config import Config
 
-
-def build_finanial_agent():
-    """create the entire workflow"""
-
-    # 1. initialize LLM 
-    print('Creating llm ...')
-
-    model = ChatOpenRouter(
+def get_llm():
+    """Khởi tạo LLM với LangSmith tracing"""
+    
+    from openai import OpenAI
+    
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=Config.OPENROUTER_API_KEY,
+        timeout=120,  # ✅ Tăng timeout
+        max_retries=3,  # ✅ Thêm retry
+    )
+    
+    if Config.LANGCHAIN_TRACING_V2:
+        from langsmith.wrappers import wrap_openai
+        client = wrap_openai(client)
+    
+    return ChatOpenRouter(
         model=Config.MODEL_NAME,
         temperature=Config.temperature,
-        max_retries=2,
-        max_tokens=4096,  # Chỉ dùng max_tokens là đủ
+        max_tokens=4096,
         openrouter_api_key=Config.OPENROUTER_API_KEY,
+        timeout=120,  # ✅ Tăng timeout
+        max_retries=3,  # ✅ Thêm retry
+        default_headers={
+            "HTTP-Referer": "http://localhost:8000",
+            "X-Title": "Financial Analysis Agent",
+        }
     )
 
-    # 2. create sub agents 
-    print('Creating agents ...')
+
+@traceable(name="build_supervisor", run_type="chain")
+def build_supervisor_with_tracing():
+    """Build supervisor với tracing"""
+    model = get_llm()
+    
     technical_agent = create_technical_agent(model)
     fundamental_agent = create_fundamental_agent(model)
     sentiment_agent = create_sentiment_agent(model)
-
-
-    # 3. Tạo Supervisor
-    print('Creating supervisor ...')
+    
     supervisor_graph = create_supervisor(
         agents=[technical_agent, fundamental_agent, sentiment_agent],
         model=model,
         prompt="""
-        Bạn là Giám đốc phân tích tài chính tại một quỹ đầu tư lớn.
+        ⚠️ QUY TRÌNH BẮT BUỘC:
         
-        Nhiệm vụ của bạn: Điều phối nhóm chuyên gia để trả lời câu hỏi về thị trường.
-        Nhóm của bạn gồm:
-        - 'technical_analyst': Chuyên gia phân tích kỹ thuật
-        - 'fundamental_analyst': Chuyên gia phân tích cơ bản  
-        - 'sentiment_analyst': Chuyên gia phân tích cảm xúc thị trường
+        Bạn là Giám đốc phân tích tài chính.
+        Điều phối các chuyên gia:
+        - 'technical_analyst': Phân tích kỹ thuật - BẮT BUỘC gọi get_ohlcv_data và calculate_technical_indicators
+        - 'fundamental_analyst': Phân tích cơ bản - BẮT BUỘC gọi get_financial_statements và calculate_fundamental_metrics
+        - 'sentiment_analyst': Phân tích cảm xúc - BẮT BUỘC gọi get_news_sentiment
         
-        Quy trình làm việc:
-        1. Xác định cần phân tích khía cạnh nào dựa trên câu hỏi
-        2. Giao việc cho các chuyên gia phù hợp (song song)
-        3. Tổng hợp kết quả thành câu trả lời cuối cùng
-        
-        Lưu ý: 
-        - Không đưa ra lời khuyên mua/bán cụ thể
-        - Luôn trích dẫn nguồn số liệu
-        - Nếu dữ liệu không đủ, thông báo rõ
+        KHÔNG TỰ SUY LUẬN NẾU CHƯA GỌI TOOL.
         """
     )
-    supervisor_runnable = supervisor_graph.compile()
+    
+    return supervisor_graph.compile()
 
-    print('Creating workflow ...')
-    # 4. workflow 
+def build_financial_agent():
+    """Xây dựng workflow hoàn chỉnh"""
+    
+    print("🔄 Building financial agent...")
+    
+    # Build supervisor với tracing
+    supervisor_runnable = build_supervisor_with_tracing()
+    
+    # Tạo workflow
     workflow = StateGraph(AgentState)
     
-    # add nodes 
-    workflow.add_node('create_plan', create_research_plan)
-    print('Plan is added ...')
-    # add supervisor 
-    workflow.add_node('supervisor' , supervisor_runnable)
-    print('Supervisor is added ...')
-
-    # flow definition 
-    workflow.add_edge(START , 'create_plan')
-    workflow.add_edge('create_plan' , 'supervisor')
-    workflow.add_edge('supervisor' , END)
-
-
-    # compiler 
-    app = workflow.compile()
-
-    return app 
-
-
-
-
-
-
+    # Nodes
+    workflow.add_node("create_plan", create_research_plan)
+    workflow.add_node("supervisor", supervisor_runnable)
+    
+    # Flow
+    workflow.add_edge(START, "create_plan")
+    workflow.add_edge("create_plan", "supervisor")
+    workflow.add_edge("supervisor", END)
+    
+    print("✅ Workflow ready!")
+    return workflow.compile()

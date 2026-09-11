@@ -8,14 +8,14 @@ from langgraph.graph.message import add_messages
 #     text : str 
 #     count : int 
 
-
+from langchain_core.messages import BaseMessage
 
 
 
 class Query(TypedDict):
     """data structure after parsing question"""
     tickers : List[str] # ['AAPL', 'TSLA']v
-    fimeframes : List[str]  # ['1y', '3m']
+    timeframes : List[str]  # ['1y', '3m']
     analysis_types : List[str]   # ['technical', 'fundamental', 'sentiment']
     focus_area : Optional[List[str]]  # ['profitability', 'growth']
     questions : List[str] # specific question 
@@ -28,7 +28,7 @@ class AgentState(TypedDict):
 
 
     # orchestration layer 
-    messages : Annotated[List[str] , add_messages] # message history 
+    messages : Annotated[List[BaseMessage] , add_messages] # message history 
     research_plan : Optional[str]
 
 

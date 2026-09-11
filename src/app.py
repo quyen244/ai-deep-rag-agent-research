@@ -1,22 +1,8 @@
 import os
-from dotenv import load_dotenv
-from src.supervisor import build_finanial_agent
 import json
-from src.mockData import (
-    tickers, 
-    timeframes, 
-    focus_area, 
-    analysis_types
-)
-from typing import get_args, Dict, Any
-import logging
-
-# Load environment variables
-load_dotenv()
-
-# Cấu hình logging để debug
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from langsmith import Client
+from src.supervisor import build_financial_agent
+from src.config import Config
 
 def get_user_input():
     """
@@ -53,7 +39,7 @@ def get_user_input():
         'questions': ['Phân tích kỹ thuật và cơ bản của cổ phiếu AAPL trong 1 năm qua']  # ⭐ Sửa thành string
     }
 
-def run_financial_analysis(user_input: Dict[str, Any]):
+def run_financial_analysis(user_input):
     """
     Chạy phân tích tài chính với input từ user.
     """
@@ -64,11 +50,16 @@ def run_financial_analysis(user_input: Dict[str, Any]):
     print(f"{'='*60}\n")
     
     # ⭐ QUAN TRỌNG: Tạo câu hỏi hoàn chỉnh từ input
+    
     query = user_input.get('questions', '')
     tickers = user_input.get('tickers', [])
     timeframes = user_input.get('timeframes', [])
     analysis_types = user_input.get('analysis_types', [])
-    
+
+    if isinstance(query, list):
+            query_text = query[0] if query else ""
+    else:
+            query_text = query
     # Tạo câu hỏi đầy đủ nếu chưa có
     if not query:
         query = f"Phân tích {', '.join(analysis_types)} của cổ phiếu {', '.join(tickers)} trong {', '.join(timeframes)}"
@@ -79,7 +70,7 @@ def run_financial_analysis(user_input: Dict[str, Any]):
         "messages": [
             {
                 "role": "user",
-                "content": query[0]  # ⭐ Câu hỏi dạng string
+                "content": query_text  # ⭐ Câu hỏi dạng string
             }
         ],
         "research_plan": None,
@@ -95,207 +86,74 @@ def run_financial_analysis(user_input: Dict[str, Any]):
     }
     
     print("🔄 Đang xây dựng agent...\n")
+
+    app = build_financial_agent()
+
     
-    # Build agent
-    app = build_finanial_agent()
-    
-    print("🔄 Đang chạy phân tích...\n")
-    
-    # Chạy workflow
+        # ⭐ Chạy workflow - mọi thứ tự động được trace
     result = app.invoke(initial_state)
     
-    # ⭐ Extract outputs từ messages
+    # ⭐ Lấy run ID và in link LangSmith
+    if Config.LANGCHAIN_TRACING_V2:
+        try:
+            # Get latest run from LangSmith
+            client = Client()
+            # Lấy runs gần nhất của project
+            runs = client.list_runs(
+                project_name=Config.LANGCHAIN_PROJECT,
+                limit=1
+            )
+            for run in runs:
+                run_id = run.id
+                url = f"https://smith.langchain.com/projects/{Config.LANGCHAIN_PROJECT}/runs/{run_id}"
+                print(f"\n🔗 Xem chi tiết trace: {url}")
+        except Exception as e:
+            print(f"⚠️ Could not get LangSmith link: {e}")
+    
+    # Extract outputs
     result = extract_agent_outputs(result)
-    
-    # In kết quả
-    print_analysis_result(result)
-    
-    # ⭐ In chi tiết từng agent output
-    print_agent_outputs_detail(result)
-    
-    # Lưu kết quả ra file
-    save_result_to_json(result)
     
     return result
 
-def extract_agent_outputs(result: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Trích xuất output của từng agent từ messages.
-    """
-    print("\n🔍 Đang trích xuất output từ các agent...")
-    
-    agent_outputs = {
+def extract_agent_outputs(result: dict):
+    """Extract outputs từ messages"""
+    outputs = {
         "technical": None,
         "fundamental": None,
-        "sentiment": None,
-        "macro": None
+        "sentiment": None
     }
     
-    final_report = None
-    supervisor_messages = []
+    supervisor_msgs = []
     
     if result.get("messages"):
         for msg in result["messages"]:
             if isinstance(msg, dict):
-                role = msg.get("role", "")
-                content = msg.get("content", "")
                 name = msg.get("name", "")
-                msg_type = msg.get("type", "")
+                content = msg.get("content", "")
                 
-                # Debug: in từng message
-                if content and len(str(content)) > 10:
-                    print(f"  📨 [{role}] {name}: {str(content)[:50]}...")
-                
-                # Tìm output của từng agent theo name
-                if name == "technical_analyst":
-                    agent_outputs["technical"] = content
-                    print(f"  ✅ Found Technical Analysis ({len(str(content))} chars)")
-                elif name == "fundamental_analyst":
-                    agent_outputs["fundamental"] = content
-                    print(f"  ✅ Found Fundamental Analysis ({len(str(content))} chars)")
-                elif name == "sentiment_analyst":
-                    agent_outputs["sentiment"] = content
-                    print(f"  ✅ Found Sentiment Analysis ({len(str(content))} chars)")
-                elif name == "macro_analyst":
-                    agent_outputs["macro"] = content
-                    print(f"  ✅ Found Macro Analysis ({len(str(content))} chars)")
-                
-                # Lưu supervisor messages
-                if name == "supervisor":
-                    supervisor_messages.append(content)
+                if "technical" in name.lower() and content:
+                    outputs["technical"] = content
+                elif "fundamental" in name.lower() and content:
+                    outputs["fundamental"] = content
+                elif "sentiment" in name.lower() and content:
+                    outputs["sentiment"] = content
+                elif "supervisor" in name.lower() and content:
+                    supervisor_msgs.append(content)
     
-    # Lấy tin nhắn cuối cùng của supervisor làm báo cáo
-    if supervisor_messages:
-        final_report = supervisor_messages[-1]
-        print(f"  ✅ Found Final Report ({len(str(final_report))} chars)")
-    
-    # Cập nhật result
-    result["technical_analysis"] = agent_outputs["technical"]
-    result["fundamental_analysis"] = agent_outputs["fundamental"]
-    result["sentiment_analysis"] = agent_outputs["sentiment"]
-    result["macro_analysis"] = agent_outputs["macro"]
-    result["final_report"] = final_report
-    
-    print("✅ Đã trích xuất xong output từ các agent\n")
+    result["technical_analysis"] = outputs["technical"]
+    result["fundamental_analysis"] = outputs["fundamental"]
+    result["sentiment_analysis"] = outputs["sentiment"]
+    result["final_report"] = supervisor_msgs[-1] if supervisor_msgs else None
     
     return result
 
-def print_analysis_result(result: Dict[str, Any]):
-    """
-    In kết quả phân tích tổng quan.
-    """
-    print(f"\n{'='*60}")
-    print(f"📊 KẾT QUẢ PHÂN TÍCH")
-    print(f"{'='*60}")
-    
-    # 1. Parsed Query
-    print(f"\n📋 Parsed Query:")
-    parsed = result.get("parsed_query", {})
-    if parsed:
-        print(json.dumps(parsed, indent=2, ensure_ascii=False))
-    else:
-        print("  (Chưa được parse)")
-    
-    # 2. Research Plan
-    print(f"\n📋 Research Plan:")
-    print(result.get('research_plan', 'Không có plan'))
-    
-    # 3. Agent Outputs Summary
-    print(f"\n{'─'*60}")
-    print(f"📊 AGENT OUTPUTS SUMMARY")
-    print(f"{'─'*60}")
-    
-    for agent_name, field in [
-        ("Technical", "technical_analysis"),
-        ("Fundamental", "fundamental_analysis"),
-        ("Sentiment", "sentiment_analysis"),
-        ("Macro", "macro_analysis")
-    ]:
-        content = result.get(field)
-        status = "✅ CÓ" if content else "❌ KHÔNG"
-        length = len(str(content)) if content else 0
-        print(f"  {agent_name}: {status} ({length} chars)")
-
-def print_agent_outputs_detail(result: Dict[str, Any]):
-    """
-    In chi tiết output của từng agent.
-    """
-    print(f"\n{'='*60}")
-    print(f"📄 CHI TIẾT OUTPUT TỪNG AGENT")
-    print(f"{'='*60}")
-    
-    # Technical Analysis
-    print(f"\n{'─'*60}")
-    print(f"📈 TECHNICAL ANALYSIS:")
-    print(f"{'─'*60}")
-    tech = result.get("technical_analysis")
-    if tech:
-        print(tech)
-    else:
-        print("❌ Không có dữ liệu")
-    
-    # Fundamental Analysis
-    print(f"\n{'─'*60}")
-    print(f"📊 FUNDAMENTAL ANALYSIS:")
-    print(f"{'─'*60}")
-    fund = result.get("fundamental_analysis")
-    if fund:
-        print(fund)
-    else:
-        print("❌ Không có dữ liệu")
-    
-    # Sentiment Analysis
-    print(f"\n{'─'*60}")
-    print(f"📰 SENTIMENT ANALYSIS:")
-    print(f"{'─'*60}")
-    sent = result.get("sentiment_analysis")
-    if sent:
-        print(sent)
-    else:
-        print("❌ Không có dữ liệu")
-    
-    # Final Report
-    print(f"\n{'='*60}")
-    print(f"📄 FINAL REPORT (Tổng hợp từ Supervisor):")
-    print(f"{'='*60}")
-    report = result.get("final_report")
-    if report:
-        print(report)
-    else:
-        print("❌ Không có báo cáo tổng hợp")
-    
-    print(f"\n{'='*60}\n")
-
-def save_result_to_json(result: Dict[str, Any]):
-    """
-    Lưu kết quả ra file JSON.
-    """
-    try:
-        # Chuyển đổi các object không serializable
-        def json_serializable(obj):
-            if hasattr(obj, '__dict__'):
-                return str(obj)
-            return obj
-        
-        with open("analysis_result.json", "w", encoding="utf-8") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False, default=json_serializable)
-        print("✅ Đã lưu kết quả vào analysis_result.json")
-    except Exception as e:
-        print(f"⚠️ Không thể lưu JSON: {e}")
-
 if __name__ == "__main__":
-    print("\n" + "=" * 60)
-    print("🚀 FINANCIAL ANALYSIS AGENT")
-    print("=" * 60 + "\n")
-    
-    # Lấy input từ user
     user_input = get_user_input()
-    
-    # Chạy phân tích
     result = run_financial_analysis(user_input)
     
-    # In summary
     print("\n" + "=" * 60)
-    print("✅ PHÂN TÍCH HOÀN TẤT")
+    print("📊 KẾT QUẢ")
     print("=" * 60)
-    print(f"📊 Xem chi tiết trong file: analysis_result.json")
+    print(f"\nTechnical: {'✅' if result['technical_analysis'] else '❌'}")
+    print(f"Fundamental: {'✅' if result['fundamental_analysis'] else '❌'}")
+    print(f"Sentiment: {'✅' if result['sentiment_analysis'] else '❌'}")
