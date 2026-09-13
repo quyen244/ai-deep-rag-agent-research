@@ -2,9 +2,11 @@
 
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from threading import Lock
+from time import perf_counter
 from typing import Protocol
 from uuid import UUID
 
@@ -24,6 +26,24 @@ class ResultRepository(Protocol):
     def find_by_idempotency_key(self, key: str) -> RunState | None: ...
 
 
+@dataclass(frozen=True, slots=True)
+class PersistenceEvent:
+    operation: str
+    status: str
+    duration_ms: float
+    run_id: str | None = None
+    error_code: str | None = None
+
+
+class PersistenceObserver(Protocol):
+    def record(self, event: PersistenceEvent) -> None: ...
+
+
+class NoOpPersistenceObserver:
+    def record(self, event: PersistenceEvent) -> None:
+        del event
+
+
 class FileResultRepository:
     """Persist one immutable ``RunState`` as ``{run_id}.json``.
 
@@ -31,15 +51,37 @@ class FileResultRepository:
     it at the final path. Terminal artifacts are never intentionally overwritten.
     """
 
-    def __init__(self, output_dir: Path) -> None:
+    def __init__(self, output_dir: Path, *, observer: PersistenceObserver | None = None) -> None:
         self._output_dir = Path(output_dir)
         self._lock = Lock()
+        self._observer = observer or NoOpPersistenceObserver()
 
     @property
     def output_dir(self) -> Path:
         return self._output_dir
 
     def save(self, result: RunState) -> RunState:
+        started = perf_counter()
+        status = "succeeded"
+        error_code: str | None = None
+        try:
+            return self._save(result)
+        except Exception as exc:
+            status = "failed"
+            error_code = exc.code if isinstance(exc, PersistenceError) else "persistence_error"
+            raise
+        finally:
+            self._record(
+                PersistenceEvent(
+                    operation="result_save",
+                    status=status,
+                    duration_ms=round((perf_counter() - started) * 1_000, 3),
+                    run_id=str(result.run_id),
+                    error_code=error_code,
+                )
+            )
+
+    def _save(self, result: RunState) -> RunState:
         destination = self._path_for(result.run_id)
         with self._lock:
             directory = self._ensure_directory()
@@ -93,12 +135,53 @@ class FileResultRepository:
                         pass
 
     def get(self, run_id: UUID) -> RunState | None:
+        started = perf_counter()
+        status = "succeeded"
+        error_code: str | None = None
+        try:
+            return self._get(run_id)
+        except Exception as exc:
+            status = "failed"
+            error_code = exc.code if isinstance(exc, PersistenceError) else "persistence_error"
+            raise
+        finally:
+            self._record(
+                PersistenceEvent(
+                    operation="result_read",
+                    status=status,
+                    duration_ms=round((perf_counter() - started) * 1_000, 3),
+                    run_id=str(run_id),
+                    error_code=error_code,
+                )
+            )
+
+    def _get(self, run_id: UUID) -> RunState | None:
         path = self._path_for(run_id)
         if not path.exists():
             return None
         return self._read_path(path, run_id)
 
     def find_by_idempotency_key(self, key: str) -> RunState | None:
+        started = perf_counter()
+        status = "succeeded"
+        error_code: str | None = None
+        try:
+            return self._find_by_idempotency_key(key)
+        except Exception as exc:
+            status = "failed"
+            error_code = exc.code if isinstance(exc, PersistenceError) else "persistence_error"
+            raise
+        finally:
+            self._record(
+                PersistenceEvent(
+                    operation="idempotency_lookup",
+                    status=status,
+                    duration_ms=round((perf_counter() - started) * 1_000, 3),
+                    error_code=error_code,
+                )
+            )
+
+    def _find_by_idempotency_key(self, key: str) -> RunState | None:
         if not self._output_dir.exists():
             return None
         if not self._output_dir.is_dir():
@@ -150,6 +233,13 @@ class FileResultRepository:
                 operation="result_read",
                 context={"failure_type": type(exc).__name__},
             ) from exc
+
+    def _record(self, event: PersistenceEvent) -> None:
+        try:
+            self._observer.record(event)
+        except Exception:
+            # Observability cannot make an otherwise valid persistence operation fail.
+            pass
 
     @staticmethod
     def _sync_directory(directory: Path) -> None:

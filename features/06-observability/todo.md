@@ -3,20 +3,20 @@
 ## Contract
 
 - [x] Draft logging, tracing, and metrics contracts.
-- [ ] Approve in-process JSON metrics and deferred external monitoring stack.
+- [x] Approve in-process JSON metrics and deferred external monitoring stack.
 
 ## Implementation
 
-- [ ] Add structured logging configuration and context propagation.
-- [ ] Add safe timing and boundary-event helpers.
-- [ ] Add bounded in-memory counters and duration aggregates.
-- [ ] Instrument request, graph, executor, MCP, synthesis, and persistence boundaries.
-- [ ] Propagate exact run metadata to LangSmith.
-- [ ] Remove print statements and latest-run lookup after coverage exists.
+- [x] Add structured logging configuration and context propagation.
+- [x] Add safe timing and boundary-event helpers.
+- [x] Add bounded in-memory counters and duration aggregates.
+- [x] Instrument request, graph, executor, MCP, synthesis, and persistence boundaries.
+- [x] Propagate exact run metadata to LangSmith.
+- [x] Remove print statements and latest-run lookup after coverage exists.
 
 ## Verification
 
-- [ ] Test success, failure, partial-result, and tracing-disabled events.
-- [ ] Verify all required correlation fields and metric deltas.
-- [ ] Verify secret redaction and valid JSON log output.
-- [ ] Record evidence in `reports/06-observability-progress.md`.
+- [x] Test success, failure, partial-result, and tracing-disabled events.
+- [x] Verify all required correlation fields and metric deltas.
+- [x] Verify secret redaction and valid JSON log output.
+- [x] Record evidence in `reports/06-observability-progress.md`.

@@ -1,4 +1,4 @@
-"""Minimal observer seam consumed by the later observability feature."""
+"""Tool-call observer seam consumed by structured observability adapters."""
 
 from dataclasses import dataclass
 from typing import Protocol

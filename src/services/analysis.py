@@ -16,6 +16,8 @@ from src.core.errors import (
 )
 from src.core.ids import new_run_id
 from src.orchestration.normalization import RequestNormalizer
+from src.observability.context import new_request_id, run_scope
+from src.observability.events import Observability
 from src.persistence.repository import ResultRepository
 from src.schemas.common import ErrorDetail
 from src.schemas.enums import RunStatus
@@ -47,11 +49,15 @@ class AnalysisService:
         normalizer: RequestNormalizer | None = None,
         metrics: ApiMetrics | None = None,
         clock: Clock | None = None,
+        observability: Observability | None = None,
     ) -> None:
         self._runner = runner
         self._repository = repository
         self._normalizer = normalizer or RequestNormalizer()
         self._metrics = metrics or ApiMetrics()
+        self._observability = observability or Observability(metrics=self._metrics)
+        if observability is not None:
+            self._metrics = observability.metrics  # type: ignore[assignment]
         self._clock = clock or SystemClock()
         self._idempotency_locks: dict[str, asyncio.Lock] = {}
 
@@ -59,31 +65,71 @@ class AnalysisService:
     def metrics(self) -> ApiMetrics:
         return self._metrics
 
+    @property
+    def observability(self) -> Observability:
+        return self._observability
+
     async def execute(self, request: AnalysisRequest) -> RunState:
         """Validate semantics, execute at most once per key, and save the result."""
 
-        normalized_request = self._normalize_request(request)
-        self._metrics.record_submission()
-        if request.idempotency_key is None:
-            return await self._execute_new_run(request, normalized_request)
+        run_id = new_run_id()
+        request_id = new_request_id()
+        with run_scope(str(run_id), request_id=request_id):
+            try:
+                normalized_request = self._normalize_request(request)
+            except RequestValidationError as exc:
+                self._observability.emit(
+                    "analysis_request_rejected",
+                    operation="request_normalization",
+                    status="failed",
+                    error_type=exc.code,
+                )
+                raise
 
-        lock = self._idempotency_locks.setdefault(request.idempotency_key, asyncio.Lock())
-        async with lock:
-            existing = self._repository.find_by_idempotency_key(request.idempotency_key)
+        if request.idempotency_key is not None:
+            lock = self._idempotency_locks.setdefault(request.idempotency_key, asyncio.Lock())
+            with run_scope(str(run_id), request_id=request_id):
+                async with lock:
+                    existing = self._repository.find_by_idempotency_key(request.idempotency_key)
             if existing is not None:
-                self._metrics.record_idempotency_hit()
-                return existing
-            return await self._execute_new_run(request, normalized_request)
+                with run_scope(str(existing.run_id), request_id=request_id):
+                    self._metrics.record_submission()
+                    self._metrics.record_idempotency_hit()
+                    self._observability.emit(
+                        "analysis_request_replayed",
+                        operation="analysis_execution",
+                        status="succeeded",
+                    )
+                    return existing
+
+        with run_scope(str(run_id), request_id=request_id):
+            self._metrics.record_submission()
+            self._observability.emit(
+                "analysis_request_accepted",
+                operation="analysis_execution",
+                status="running",
+            )
+            return await self._execute_new_run(run_id, request, normalized_request)
 
     def get(self, run_id: UUID) -> RunState:
-        result = self._repository.get(run_id)
-        if result is None:
-            raise ResultNotFoundError(
-                "No persisted analysis exists for this run ID.",
-                run_id=str(run_id),
-                operation="result_lookup",
+        with run_scope(str(run_id), request_id=new_request_id()):
+            self._observability.emit(
+                "analysis_result_requested", operation="result_lookup", status="running"
             )
-        return result
+            result = self._repository.get(run_id)
+            if result is None:
+                self._observability.emit(
+                    "analysis_result_completed", operation="result_lookup", status="failed"
+                )
+                raise ResultNotFoundError(
+                    "No persisted analysis exists for this run ID.",
+                    run_id=str(run_id),
+                    operation="result_lookup",
+                )
+            self._observability.emit(
+                "analysis_result_completed", operation="result_lookup", status="succeeded"
+            )
+            return result
 
     def _normalize_request(self, request: AnalysisRequest) -> NormalizedRequest:
         try:
@@ -96,11 +142,13 @@ class AnalysisService:
             ) from exc
 
     async def _execute_new_run(
-        self, request: AnalysisRequest, normalized_request: NormalizedRequest
+        self, run_id: UUID, request: AnalysisRequest, normalized_request: NormalizedRequest
     ) -> RunState:
         started = perf_counter()
-        run_id = new_run_id()
         created_at = self._clock.now()
+        self._observability.emit(
+            "analysis_execution_started", operation="analysis_execution", status="running"
+        )
         try:
             result = RunState.model_validate(
                 await self._runner.run(run_id=run_id, request=request, created_at=created_at)
@@ -119,9 +167,22 @@ class AnalysisService:
         try:
             saved = self._repository.save(result)
         except PersistenceError:
+            self._observability.emit(
+                "analysis_execution_completed",
+                operation="analysis_execution",
+                status="failed",
+                duration_ms=(perf_counter() - started) * 1_000,
+                error_type="persistence_error",
+            )
             raise
         elapsed_ms = (perf_counter() - started) * 1_000
         self._metrics.record_terminal(saved.status, elapsed_ms)
+        self._observability.emit(
+            "analysis_execution_completed",
+            operation="analysis_execution",
+            status=saved.status.value,
+            duration_ms=elapsed_ms,
+        )
         return saved
 
     def _failed_run(

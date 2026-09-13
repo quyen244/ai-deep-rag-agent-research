@@ -10,6 +10,7 @@ from src.core.config import Settings
 from src.core.errors import MCPToolError
 from src.mcp.telemetry import NoOpToolCallObserver, ToolCallEvent, ToolCallObserver
 from src.mcp.transport import ClientTransportTarget, create_client_transport
+from src.observability.context import current_context
 from src.providers.schemas import (
     CompanyFinancialsResponse,
     CompanyMetricsResponse,
@@ -47,11 +48,15 @@ class FinanceMCPClient:
         status = "succeeded"
         error_code: str | None = None
         try:
+            active_context = current_context()
+            metadata = dict(active_context.trace_metadata) if active_context is not None else {}
+            if run_id is not None:
+                metadata["run_id"] = run_id
             async with Client(self._transport) as client:
                 result = await client.call_tool(
                     tool,
                     arguments,
-                    meta={"run_id": run_id} if run_id else None,
+                    meta=metadata or None,
                 )
             payload = (
                 result.structured_content

@@ -9,6 +9,7 @@ from src.core.config import Settings
 from src.core.errors import AgentExecutionError
 from src.core.model_factory import ModelFactory
 from src.executors.contracts import GroundedInterpretation
+from src.observability.tracing import ainvoke_with_trace_metadata
 
 
 StructuredInterpretation = GroundedInterpretation
@@ -46,7 +47,11 @@ class LunaStructuredInterpreter:
         )
         for attempt in range(2):
             try:
-                response = await runnable.ainvoke(prompt)
+                response = await ainvoke_with_trace_metadata(
+                    runnable,
+                    prompt,
+                    operation="structured_interpretation",
+                )
                 interpretation = GroundedInterpretation.model_validate(response)
                 unknown_ids = set(interpretation.evidence_ids).difference(evidence_ids)
                 if unknown_ids:

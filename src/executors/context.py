@@ -1,7 +1,7 @@
 """Dependencies and stable identity passed to every executor invocation."""
 
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import Mapping, Protocol
 
 from src.core.clock import Clock, SystemClock
 from src.providers.schemas import (
@@ -66,6 +66,8 @@ class RunContext:
     clock: Clock = field(default_factory=SystemClock)
     interpreter: InterpretationClient | None = None
     macro_region: str = "US"
+    request_id: str | None = None
+    trace_metadata: Mapping[str, str] = field(default_factory=dict)
 
 
 # ``ExecutorContext`` is retained as the public spelling used in the feature

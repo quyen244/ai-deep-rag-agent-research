@@ -1,7 +1,6 @@
 """Shared executor envelope, safe failure conversion, and execution telemetry."""
 
 import asyncio
-import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from time import perf_counter
@@ -14,8 +13,6 @@ from src.schemas.common import ErrorDetail, EvidenceItem
 from src.schemas.domain import DomainOutcome
 from src.schemas.enums import AnalysisDomain, OutcomeStatus, SourceType
 from src.schemas.request import NormalizedRequest
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,18 +153,6 @@ class ExecutorRunner:
     def _record(self, event: ExecutorEvent) -> None:
         try:
             self._observer.record(event)
-            logger.info(
-                "executor_completed",
-                extra={
-                    "run_id": event.run_id,
-                    "ticker": event.ticker,
-                    "agent": event.agent,
-                    "operation": event.operation,
-                    "status": event.status.value,
-                    "duration_ms": event.duration_ms,
-                    "error_code": event.error_code,
-                },
-            )
         except Exception:
             # An observer or logging adapter cannot alter an analysis outcome.
             pass

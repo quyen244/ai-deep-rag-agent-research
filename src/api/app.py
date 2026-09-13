@@ -17,6 +17,12 @@ from src.core.errors import (
     ResultNotFoundError,
 )
 from src.mcp.client import FinanceMCPClient
+from src.observability import (
+    Observability,
+    PersistenceTelemetryObserver,
+    ToolTelemetryObserver,
+    configure_structured_logging,
+)
 from src.orchestration.graph import AnalysisOrchestrator
 from src.persistence.repository import FileResultRepository
 from src.schemas.request import AnalysisRequest
@@ -33,6 +39,7 @@ def create_app(
     """Build an injectable app without making network calls or writing files."""
 
     effective_settings = settings or get_settings()
+    configure_structured_logging(effective_settings.log_level)
     effective_service = service or _build_service(effective_settings)
     app = FastAPI(
         title=effective_settings.app_name,
@@ -54,10 +61,18 @@ def create_app(
 
 
 def _build_service(settings: Settings) -> AnalysisService:
-    orchestrator = AnalysisOrchestrator(mcp_client=FinanceMCPClient(settings))
+    observability = Observability()
+    orchestrator = AnalysisOrchestrator(
+        mcp_client=FinanceMCPClient(settings, observer=ToolTelemetryObserver(observability)),
+        observability=observability,
+    )
     return AnalysisService(
         runner=orchestrator,
-        repository=FileResultRepository(settings.result_output_dir),
+        repository=FileResultRepository(
+            settings.result_output_dir,
+            observer=PersistenceTelemetryObserver(observability),
+        ),
+        observability=observability,
     )
 
 

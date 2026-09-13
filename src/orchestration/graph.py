@@ -14,12 +14,16 @@ from src.core.errors import ApplicationError, OrchestratorError, SynthesisError
 from src.executors.context import FinanceDataClient, InterpretationClient, RunContext
 from src.executors.fundamental import FundamentalExecutor
 from src.executors.macro import MacroExecutor
+from src.executors.runner import ExecutorRunner
 from src.executors.sentiment import SentimentExecutor
 from src.executors.technical import TechnicalExecutor
 from src.orchestration.contracts import GraphState, TaskSpec
 from src.orchestration.normalization import DEFAULT_SUPPORTED_TICKERS, RequestNormalizer
 from src.orchestration.planner import TaskPlanner
 from src.orchestration.synthesis import BoundedReportSynthesizer, ReportSynthesizer
+from src.observability.adapters import ExecutorTelemetryObserver
+from src.observability.context import current_context, run_scope
+from src.observability.events import Observability
 from src.schemas.common import ErrorDetail
 from src.schemas.domain import DomainOutcome
 from src.schemas.enums import AnalysisDomain, OutcomeStatus, RunStatus
@@ -58,20 +62,23 @@ class AnalysisOrchestrator:
         clock: Clock | None = None,
         interpreter: InterpretationClient | None = None,
         macro_region: str = "US",
+        observability: Observability | None = None,
     ) -> None:
         self._mcp_client = mcp_client
         self._clock = clock or SystemClock()
         self._interpreter = interpreter
         self._macro_region = macro_region
+        self._observability = observability or Observability()
         self._normalizer = RequestNormalizer(supported_tickers)
         self._planner = TaskPlanner()
+        executor_runner = ExecutorRunner(observer=ExecutorTelemetryObserver(self._observability))
         self._executors: dict[AnalysisDomain, DomainExecutor] = dict(
             executors
             or {
-                AnalysisDomain.TECHNICAL: TechnicalExecutor(),
-                AnalysisDomain.FUNDAMENTAL: FundamentalExecutor(),
-                AnalysisDomain.SENTIMENT: SentimentExecutor(),
-                AnalysisDomain.MACRO: MacroExecutor(),
+                AnalysisDomain.TECHNICAL: TechnicalExecutor(executor_runner),
+                AnalysisDomain.FUNDAMENTAL: FundamentalExecutor(executor_runner),
+                AnalysisDomain.SENTIMENT: SentimentExecutor(executor_runner),
+                AnalysisDomain.MACRO: MacroExecutor(executor_runner),
             }
         )
         self._synthesizer = BoundedReportSynthesizer(synthesizer)
@@ -86,30 +93,57 @@ class AnalysisOrchestrator:
     ) -> RunState:
         """Execute one immutable analysis run after input has been accepted."""
 
-        started_at = self._clock.now()
-        state = await self._graph.ainvoke(
-            {
-                "run_id": str(run_id),
-                "raw_request": request,
-                "started_at": started_at,
-                "outcomes": [],
-                "errors": [],
-                "phase": "received",
-            }
-        )
-        report = state.get("report")
-        completed_at = state.get("completed_at", self._clock.now())
-        return RunState(
-            run_id=run_id,
-            status=report.status if report is not None else RunStatus.FAILED,
-            request=state["request"],
-            domain_outcomes=state["outcomes"],
-            report=report,
-            errors=state["errors"],
-            created_at=created_at or started_at,
-            started_at=started_at,
-            completed_at=completed_at,
-        )
+        active_context = current_context()
+        with run_scope(
+            str(run_id),
+            request_id=active_context.request_id if active_context is not None else None,
+            trace_metadata=active_context.trace_metadata if active_context is not None else None,
+        ):
+            started = perf_counter()
+            started_at = self._clock.now()
+            self._observability.emit(
+                "pipeline_started", operation="analysis_execution", status="running"
+            )
+            try:
+                state = await self._graph.ainvoke(
+                    {
+                        "run_id": str(run_id),
+                        "raw_request": request,
+                        "started_at": started_at,
+                        "outcomes": [],
+                        "errors": [],
+                        "phase": "received",
+                    }
+                )
+            except Exception as exc:
+                self._observability.emit(
+                    "pipeline_completed",
+                    operation="analysis_execution",
+                    status="failed",
+                    duration_ms=(perf_counter() - started) * 1_000,
+                    error_type=type(exc).__name__,
+                )
+                raise
+            report = state.get("report")
+            completed_at = state.get("completed_at", self._clock.now())
+            result = RunState(
+                run_id=run_id,
+                status=report.status if report is not None else RunStatus.FAILED,
+                request=state["request"],
+                domain_outcomes=state["outcomes"],
+                report=report,
+                errors=state["errors"],
+                created_at=created_at or started_at,
+                started_at=started_at,
+                completed_at=completed_at,
+            )
+            self._observability.emit(
+                "pipeline_completed",
+                operation="analysis_execution",
+                status=result.status.value,
+                duration_ms=(perf_counter() - started) * 1_000,
+            )
+            return result
 
     @property
     def graph(self):  # type: ignore[no-untyped-def]
@@ -142,12 +176,15 @@ class AnalysisOrchestrator:
 
     async def _execute_tasks(self, state: GraphState) -> dict[str, object]:
         request = state["request"]
+        active_context = current_context()
         run_context = RunContext(
             run_id=state["run_id"],
             mcp_client=self._mcp_client,
             clock=self._clock,
             interpreter=self._interpreter,
             macro_region=self._macro_region,
+            request_id=active_context.request_id if active_context is not None else None,
+            trace_metadata=active_context.trace_metadata if active_context is not None else {},
         )
         # Each explicit task starts before this node awaits any outcome. This is
         # the graph's concurrency boundary and has no model-controlled routing.
@@ -196,6 +233,17 @@ class AnalysisOrchestrator:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            self._observability.boundary(
+                "agent_execution_completed",
+                group="agent",
+                label="orchestrator_dispatch",
+                status="failed",
+                duration_ms=(perf_counter() - started) * 1_000,
+                error_type="orchestrator_error",
+                agent="orchestrator_dispatch",
+                ticker=task.ticker,
+                operation="task_execution",
+            )
             return DomainOutcome(
                 ticker=task.ticker,
                 domain=task.domain,
@@ -210,6 +258,15 @@ class AnalysisOrchestrator:
             outcome for outcome in state["outcomes"] if outcome.status is OutcomeStatus.SUCCEEDED
         ]
         if not succeeded:
+            self._observability.boundary(
+                "synthesis_completed",
+                group="synthesis",
+                label="report_synthesis",
+                status="failed",
+                duration_ms=0.0,
+                error_type="synthesis_error",
+                operation="report_synthesis",
+            )
             return {
                 "errors": [
                     ErrorDetail(
@@ -228,6 +285,7 @@ class AnalysisOrchestrator:
     async def _synthesize_successful_outcomes(
         self, state: GraphState, completed_at: datetime
     ) -> dict[str, object]:
+        started = perf_counter()
         try:
             report = await self._synthesizer.synthesize(
                 run_id=state["run_id"],
@@ -237,7 +295,24 @@ class AnalysisOrchestrator:
                 completed_at=completed_at,
             )
         except Exception as exc:
+            self._observability.boundary(
+                "synthesis_completed",
+                group="synthesis",
+                label="report_synthesis",
+                status="failed",
+                duration_ms=(perf_counter() - started) * 1_000,
+                error_type="synthesis_error",
+                operation="report_synthesis",
+            )
             return self._synthesis_failure(state, completed_at, exc)
+        self._observability.boundary(
+            "synthesis_completed",
+            group="synthesis",
+            label="report_synthesis",
+            status="succeeded",
+            duration_ms=(perf_counter() - started) * 1_000,
+            operation="report_synthesis",
+        )
         return {
             "report": report,
             "phase": "synthesized",
