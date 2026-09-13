@@ -1,0 +1,139 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - link "Skip to analysis workspace" [ref=e3] [cursor=pointer]:
+      - /url: "#workspace"
+    - banner "Application header" [ref=e4]:
+      - generic [ref=e5]:
+        - generic [aria-hidden] [ref=e6]: +
+        - paragraph [ref=e7]: Multi-agent financial analysis
+        - heading "Signal Ledger" [level=1] [ref=e8]
+      - paragraph [ref=e9]: REV 07 / SYNCHRONOUS RESEARCH DESK
+    - main [ref=e10]:
+      - region [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e14]: 01 / Analysis composer
+            - heading "Open a research run" [level=2] [ref=e15]
+            - paragraph [ref=e16]: "Supported symbols: AAPL, TSLA, MSFT"
+          - generic "Color theme" [ref=e17]:
+            - button "Carbon" [pressed] [ref=e18] [cursor=pointer]
+            - button "Light" [ref=e19] [cursor=pointer]
+        - generic [ref=e20]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - generic [ref=e23]: Research request Required when ticker field is empty
+              - textbox "Research request Required when ticker field is empty" [ref=e24]:
+                - /placeholder: Analyze AAPL and TSLA
+                - text: Analyze AAPL and TSLA
+            - generic [ref=e25]:
+              - generic [ref=e26]: Ticker override Optional, comma separated
+              - textbox "Ticker override Optional, comma separated" [ref=e27]:
+                - /placeholder: AAPL, TSLA
+            - group "Research domains" [ref=e28]:
+              - generic [ref=e30]:
+                - generic [ref=e31]:
+                  - checkbox "Technical" [checked] [ref=e32]
+                  - generic [ref=e33]: Technical
+                - generic [ref=e34]:
+                  - checkbox "Fundamental" [checked] [ref=e35]
+                  - generic [ref=e36]: Fundamental
+                - generic [ref=e37]:
+                  - checkbox "Sentiment" [checked] [ref=e38]
+                  - generic [ref=e39]: Sentiment
+                - generic [ref=e40]:
+                  - checkbox "Macro" [checked] [ref=e41]
+                  - generic [ref=e42]: Macro
+            - generic [ref=e43]:
+              - generic [ref=e44]: Timeframe
+              - combobox "Timeframe" [ref=e45]:
+                - option "1 month"
+                - option "3 months"
+                - option "6 months"
+                - option "1 year" [selected]
+                - option "5 years"
+            - generic [ref=e46]:
+              - generic [ref=e47]: Focus areas Optional
+              - textbox "Focus areas Optional" [ref=e48]:
+                - /placeholder: valuation, momentum
+          - generic [ref=e49]:
+            - generic [ref=e50]: One synchronous request per analysis
+            - button "Analyze" [ref=e51] [cursor=pointer]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - paragraph [ref=e71]: Run record
+          - paragraph [ref=e72]: RUN ID / 0f10c29e-6786-4af0-a844-333333333333
+        - generic [ref=e73]: Succeeded
+      - generic [ref=e76]:
+        - tablist "Analysis views" [ref=e77]:
+          - tab "Overview" [selected] [ref=e78] [cursor=pointer]
+          - tab "Technical" [ref=e79] [cursor=pointer]
+          - tab "Fundamental" [ref=e80] [cursor=pointer]
+          - tab "Sentiment" [ref=e81] [cursor=pointer]
+          - tab "Macro" [ref=e82] [cursor=pointer]
+          - tab "Comparison" [ref=e83] [cursor=pointer]
+          - tab "Evidence" [ref=e84] [cursor=pointer]
+        - tabpanel "Overview" [ref=e85]:
+          - region [ref=e86]:
+            - generic [ref=e87]:
+              - generic [ref=e88]:
+                - paragraph [ref=e89]: 02 / Executive readout
+                - heading "Research brief" [level=2] [ref=e90]
+              - generic [ref=e91]: AAPL / TSLA / 1y
+            - generic [ref=e92]:
+              - region [ref=e93]:
+                - paragraph [ref=e94]: Executive summary
+                - paragraph [ref=e95]: AAPL shows stronger profitability while TSLA remains more valuation sensitive.
+              - region [ref=e96]:
+                - paragraph [ref=e97]: Company readouts
+                - list [ref=e98]:
+                  - listitem [ref=e99]:
+                    - heading "AAPL" [level=3] [ref=e100]
+                    - paragraph [ref=e101]: Cash generation remains a key strength.
+                  - listitem [ref=e102]:
+                    - heading "TSLA" [level=3] [ref=e103]
+                    - paragraph [ref=e104]: Pricing pressure remains a material risk.
+              - region [ref=e105]:
+                - paragraph [ref=e106]: Opportunities
+                - list [ref=e107]:
+                  - listitem [ref=e108]: + AAPL services growth
+              - region [ref=e109]:
+                - paragraph [ref=e110]: Risks
+                - list [ref=e111]:
+                  - listitem [ref=e112]: "- TSLA pricing pressure"
+              - region [ref=e113]:
+                - paragraph [ref=e114]: Execution details
+                - generic [ref=e115]:
+                  - generic [ref=e116]:
+                    - term [ref=e117]: Requested tasks
+                    - definition [ref=e118]: "8"
+                  - generic [ref=e119]:
+                    - term [ref=e120]: Succeeded tasks
+                    - definition [ref=e121]: "8"
+                  - generic [ref=e122]:
+                    - term [ref=e123]: Failed tasks
+                    - definition [ref=e124]: "0"
+                  - generic [ref=e125]:
+                    - term [ref=e126]: Elapsed
+                    - definition [ref=e127]: 316 ms
+                  - generic [ref=e128]:
+                    - term [ref=e129]: Started
+                    - definition [ref=e130]: Sep 13, 2026, 7:00 PM
+                  - generic [ref=e131]:
+                    - term [ref=e132]: Model
+                    - definition [ref=e133]: deterministic-test
+                  - generic [ref=e134]:
+                    - term [ref=e135]: Generated
+                    - definition [ref=e136]: Sep 13, 2026, 7:00 PM
+                  - generic [ref=e137]:
+                    - term [ref=e138]: Run status
+                    - definition [ref=e139]: Succeeded
+            - paragraph [ref=e140]: Mock data for interface verification only. Not investment advice.
+      - group [ref=e141]:
+        - generic "Raw API JSON Inspection only" [ref=e142] [cursor=pointer]:
+          - text: Raw API JSON
+          - generic [ref=e143]: Inspection only
+    - contentinfo [ref=e56]:
+      - generic [ref=e57]: STRUCTURED RESEARCH / LOCAL API CONTRACT
+      - generic [ref=e58]: NOT INVESTMENT ADVICE
+  - button "Open Next.js Dev Tools" [ref=e64] [cursor=pointer]
+  - alert [ref=e68]
