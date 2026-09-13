@@ -7,20 +7,13 @@ from src.schemas.enums import AnalysisDomain
 from src.schemas.request import AnalysisRequest, NormalizedRequest
 
 DEFAULT_SUPPORTED_TICKERS = ("AAPL", "TSLA", "MSFT")
-_SYMBOL = re.compile(r"\b[A-Z][A-Z0-9.-]{0,9}\b", re.IGNORECASE)
-_SYMBOL_CONNECTOR = re.compile(r"(?:analyze|compare|and|vs|,)\s*$", re.IGNORECASE)
+_SYMBOL = re.compile(r"\b[A-Z][A-Z0-9.-]{0,9}\b")
 _DOMAIN_KEYWORDS: tuple[tuple[AnalysisDomain, tuple[str, ...]], ...] = (
     (AnalysisDomain.TECHNICAL, ("technical", "technicals", "tech analysis")),
     (AnalysisDomain.FUNDAMENTAL, ("fundamental", "fundamentals", "financial health")),
     (AnalysisDomain.SENTIMENT, ("sentiment", "news sentiment", "news")),
     (AnalysisDomain.MACRO, ("macro", "macroeconomic", "economy")),
 )
-_DOMAIN_WORDS = {
-    word.upper()
-    for _, keywords in _DOMAIN_KEYWORDS
-    for keyword in keywords
-    for word in keyword.split()
-}
 
 
 class RequestNormalizer:
@@ -68,23 +61,15 @@ class RequestNormalizer:
     def _tickers_from_text(self, request_text: str | None) -> list[str]:
         if not request_text:
             return []
-        candidates = list(
-            dict.fromkeys(match.group(0).upper() for match in _SYMBOL.finditer(request_text))
-        )
+        candidates = list(dict.fromkeys(_SYMBOL.findall(request_text)))
         supported = [ticker for ticker in candidates if ticker in self._supported_set]
-        # Only treat an unknown word as a symbol when it appears in a ticker
-        # position. This accepts natural text such as "with macro context" while
-        # still rejecting "Analyze AAPL and NVDA" rather than dropping NVDA.
-        unsupported = []
-        for match in _SYMBOL.finditer(request_text):
-            ticker = match.group(0).upper()
-            if (
-                ticker not in self._supported_set
-                and ticker not in _DOMAIN_WORDS
-                and _SYMBOL_CONNECTOR.search(request_text[: match.start()])
-            ):
-                unsupported.append(ticker)
-        unsupported = list(dict.fromkeys(unsupported))
+        # A concise all-caps token in a ticker request is most often a symbol.
+        # Reject it if unsupported rather than silently dropping a requested stock.
+        unsupported = [
+            ticker
+            for ticker in candidates
+            if ticker not in self._supported_set and 1 < len(ticker) <= 5
+        ]
         if unsupported:
             raise ValueError(
                 "Unsupported ticker(s): "

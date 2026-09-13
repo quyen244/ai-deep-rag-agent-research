@@ -73,3 +73,15 @@ class SynthesisError(ApplicationError):
 class PersistenceError(ApplicationError):
     code = "persistence_error"
     retryable = True
+
+
+class RequestValidationError(ApplicationError):
+    """A semantic request error that is safe to render as HTTP 422."""
+
+    code = "request_validation_error"
+
+
+class ResultNotFoundError(ApplicationError):
+    """A requested immutable run artifact does not exist."""
+
+    code = "analysis_not_found"

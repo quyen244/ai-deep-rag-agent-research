@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     )
 
     result_output_dir: Path = Path("outputs")
+    cors_allowed_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     mcp_transport: Literal["memory", "stdio", "http"] = "memory"
     mcp_url: HttpUrl | None = None
@@ -57,6 +58,24 @@ class Settings(BaseSettings):
         if not cleaned:
             raise ValueError("must not be empty")
         return cleaned
+
+    @field_validator("cors_allowed_origins")
+    @classmethod
+    def validate_cors_allowed_origins(cls, values: list[str]) -> list[str]:
+        """Require explicit browser origins; wildcard CORS is never an MVP default."""
+
+        normalized: list[str] = []
+        for value in values:
+            origin = value.strip().rstrip("/")
+            if not origin.startswith(("http://", "https://")) or "/" in origin.split("://", 1)[1]:
+                raise ValueError("CORS origins must be scheme and host only")
+            if origin == "*":
+                raise ValueError("wildcard CORS origins are not allowed")
+            if origin not in normalized:
+                normalized.append(origin)
+        if not normalized:
+            raise ValueError("at least one CORS origin is required")
+        return normalized
 
     @model_validator(mode="after")
     def validate_transport(self) -> Self:

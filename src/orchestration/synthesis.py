@@ -1,6 +1,6 @@
 """Validated deterministic report synthesis and cross-stock comparison."""
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import datetime
 from typing import Any, Protocol
 
