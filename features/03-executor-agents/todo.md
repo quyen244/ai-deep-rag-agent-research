@@ -3,21 +3,21 @@
 ## Contract
 
 - [x] Draft four executor contracts and failure behavior.
-- [ ] Approve deterministic-calculation and LLM-interpretation split.
+- [x] Approve deterministic-calculation and LLM-interpretation split.
 
 ## Implementation
 
-- [ ] Add shared executor context and runner.
-- [ ] Implement and test technical calculations and executor.
-- [ ] Implement and test fundamental calculations and executor.
-- [ ] Implement and test sentiment executor.
-- [ ] Implement and test macro executor.
-- [ ] Add structured Luna interpretation with one bounded schema retry.
-- [ ] Remove superseded direct tool lists and agent factories.
+- [x] Add shared executor context and runner.
+- [x] Implement and test technical calculations and executor.
+- [x] Implement and test fundamental calculations and executor.
+- [x] Implement and test sentiment executor.
+- [x] Implement and test macro executor.
+- [x] Add structured Luna interpretation with one bounded schema retry.
+- [x] Remove superseded direct tool lists and agent factories.
 
 ## Verification
 
-- [ ] Run every executor independently for all supported tickers.
-- [ ] Verify tool, calculation, and LLM failure envelopes.
-- [ ] Verify evidence provenance for every surfaced value.
-- [ ] Record evidence in `reports/03-executor-agents-progress.md`.
+- [x] Run every executor independently for all supported tickers.
+- [x] Verify tool, calculation, and LLM failure envelopes.
+- [x] Verify evidence provenance for every surfaced value.
+- [x] Record evidence in `reports/03-executor-agents-progress.md`.

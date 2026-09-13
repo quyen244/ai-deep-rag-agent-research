@@ -14,7 +14,7 @@ _SENSITIVE_KEY = re.compile(
 )
 _BEARER_VALUE = re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]+", re.IGNORECASE)
 _KEY_VALUE = re.compile(
-    r"(?i)(api[_-]?key|password|secret|token)\s*[=:]\s*[^\s,;]+"
+    r"(?i)(api[_-]?key|authorization|credential|password|secret|token)\s*[=:]\s*[^\s,;]+"
 )
 
 
