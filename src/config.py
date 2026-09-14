@@ -1,13 +1,9 @@
-from dotenv import load_dotenv
-import os 
+"""Compatibility import for the validated application settings.
 
-load_dotenv()
+New code should import from :mod:`src.core.config`. This module intentionally has
+no import-time logging, model construction, or provider-specific configuration.
+"""
 
-class Config:
-    # API KEY
-    OPENROUTER_API_KEY = os.getenv('OPPENROUTER_API_KEY' , "sh-")
-    MODEL_NAME = os.getenv('MODEL_NAME' , 'nemotrion-flash')
-    temperature = 0.3
-    top_p = 0.9
+from src.core.config import Settings, get_settings
 
-    
+__all__ = ["Settings", "get_settings"]

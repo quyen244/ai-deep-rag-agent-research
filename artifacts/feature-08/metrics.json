@@ -1,0 +1,163 @@
+{
+  "agents": {
+    "fundamental_executor": {
+      "duration_ms": {
+        "average_ms": 222.596,
+        "count": 2,
+        "total_ms": 445.193
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "macro_executor": {
+      "duration_ms": {
+        "average_ms": 222.738,
+        "count": 2,
+        "total_ms": 445.477
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "sentiment_executor": {
+      "duration_ms": {
+        "average_ms": 220.786,
+        "count": 2,
+        "total_ms": 441.571
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "technical_executor": {
+      "duration_ms": {
+        "average_ms": 222.435,
+        "count": 2,
+        "total_ms": 444.869
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    }
+  },
+  "analyses_failed": 0,
+  "analyses_partial": 0,
+  "analyses_submitted": 1,
+  "analyses_succeeded": 1,
+  "duration_ms": {
+    "average_ms": 244.099,
+    "count": 1,
+    "total_ms": 244.099
+  },
+  "failures": {},
+  "idempotency_hits": 0,
+  "persistence": {
+    "result_save": {
+      "duration_ms": {
+        "average_ms": 12.604,
+        "count": 1,
+        "total_ms": 12.604
+      },
+      "failed": 0,
+      "succeeded": 1,
+      "total": 1
+    }
+  },
+  "persistence_failures": 0,
+  "pipeline": {
+    "duration_ms": {
+      "average_ms": 244.099,
+      "count": 1,
+      "total_ms": 244.099
+    },
+    "failed": 0,
+    "succeeded": 1,
+    "total": 1
+  },
+  "requests": {
+    "duration_ms": {
+      "average_ms": 0.0,
+      "count": 0,
+      "total_ms": 0.0
+    },
+    "failed": 0,
+    "succeeded": 1,
+    "total": 1
+  },
+  "synthesis": {
+    "report_synthesis": {
+      "duration_ms": {
+        "average_ms": 0.284,
+        "count": 1,
+        "total_ms": 0.284
+      },
+      "failed": 0,
+      "succeeded": 1,
+      "total": 1
+    }
+  },
+  "tools": {
+    "get_company_financials": {
+      "duration_ms": {
+        "average_ms": 221.277,
+        "count": 2,
+        "total_ms": 442.554
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "get_company_metrics": {
+      "duration_ms": {
+        "average_ms": 221.339,
+        "count": 2,
+        "total_ms": 442.679
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "get_macro_indicators": {
+      "duration_ms": {
+        "average_ms": 221.375,
+        "count": 2,
+        "total_ms": 442.751
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "get_news": {
+      "duration_ms": {
+        "average_ms": 220.597,
+        "count": 2,
+        "total_ms": 441.195
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "get_ohlcv": {
+      "duration_ms": {
+        "average_ms": 222.133,
+        "count": 2,
+        "total_ms": 444.267
+      },
+      "failed": 0,
+      "succeeded": 2,
+      "total": 2
+    },
+    "get_sector_data": {
+      "duration_ms": {
+        "average_ms": 221.423,
+        "count": 4,
+        "total_ms": 885.691
+      },
+      "failed": 0,
+      "succeeded": 4,
+      "total": 4
+    }
+  },
+  "validation_failures": 0
+}

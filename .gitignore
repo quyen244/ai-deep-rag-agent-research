@@ -6,4 +6,19 @@ __pycache__/
 
 *.pyc
 
+node_modules/
 
+# Next.js dashboard generated artifacts
+.next/
+coverage/
+playwright-report/
+test-results/
+.playwright/
+.playwright-cli/
+*.tsbuildinfo
+.env.local
+dashboard/reports/
+
+# Runtime result stores; reviewed verification evidence is kept under artifacts/.
+outputs/
+dashboard/.e2e-results/

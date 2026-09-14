@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=82.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent-financial-analysis"
+version = "0.1.0"
+description = "A typed multi-agent equity research system with FastAPI, LangGraph, and FastMCP."
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+  "fastapi==0.141.1",
+  "fastmcp==4.0.3",
+  "langchain==1.4.0",
+  "langchain-core==1.6.2",
+  "langchain-openai==1.6.2",
+  "langgraph==1.2.11",
+  "langsmith==0.11.1",
+  "openai==3.3.1",
+  "pydantic==2.12.5",
+  "pydantic-settings==2.15.0",
+  "python-dotenv==1.2.3",
+  "uvicorn==0.52.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
