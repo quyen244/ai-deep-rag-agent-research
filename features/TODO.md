@@ -12,12 +12,12 @@
 
 - [x] 01 Foundation: configuration, schemas, errors, and project packaging.
 - [x] 02 MCP data layer: deterministic providers, FastMCP tools, and client adapter.
-- [ ] 03 Executor agents: technical, fundamental, sentiment, and macro outputs.
-- [ ] 04 Orchestration and synthesis: routing, concurrent fan-out, collection, and structured report.
-- [ ] 06 Observability: structured logs, run correlation, metrics, and LangSmith metadata.
-- [ ] 05 API and persistence: FastAPI endpoints and atomic JSON result storage.
-- [ ] 07 Next.js dashboard: analysis workflow, visual results, comparison, and debug view.
-- [ ] 08 Verification and documentation: boundary tests, end-to-end evidence, README, and final report.
+- [x] 03 Executor agents: technical, fundamental, sentiment, and macro outputs.
+- [x] 04 Orchestration and synthesis: routing, concurrent fan-out, collection, and structured report.
+- [x] 06 Observability: structured logs, run correlation, metrics, and LangSmith metadata.
+- [x] 05 API and persistence: FastAPI endpoints and atomic JSON result storage.
+- [x] 07 Next.js dashboard: analysis workflow, visual results, comparison, and debug view.
+- [x] 08 Verification and documentation: boundary tests, end-to-end evidence, README, and final report.
 
 ## Explicitly deferred
 

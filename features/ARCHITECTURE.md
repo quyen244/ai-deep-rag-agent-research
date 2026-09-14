@@ -184,25 +184,17 @@ The synchronous endpoint is intentional for the mock-data MVP. The frontend show
 
 ## Next.js dashboard design contract
 
-The dashboard is a product interface, not a marketing page. The user selected the `industrial-brutalist-ui` skill for the dashboard because it is purpose-built for dense analytical interfaces. The project commits to its **Swiss Industrial Print** archetype; the alternate CRT archetype is not mixed into the interface.
-
-Design read: a declassified equity-research dossier for traders and investors, combining strict Swiss grid logic with the precision of an engineering analysis sheet.
+The dashboard is an analytical workspace, not a marketing page. The user-selected Slick Carbon surface supersedes the earlier light-only design proposal: the default is `linear-gradient(180deg, #323232 0%, #3F3F3F 49%, #1C1C1C 100%)`, while an accessible light substrate remains a user-controlled alternate.
 
 - Next.js App Router with Server Components by default and small client islands for forms, tabs, raw JSON, and theme control.
 - Tailwind CSS v4 plus customized shadcn/ui primitives as one owned component system.
 - Archivo Black for structural display type and IBM Plex Mono for data and controls through `next/font`.
-- One light substrate only: matte paper `#F4F4F0`, carbon ink `#0B0B0B`, and aviation red `#E61919` as the sole accent.
-- A rigid 12-column blueprint grid, visible 1px compartment lines, square corners, and no drop shadows or translucency.
-- Macro headings use tight uppercase display type; telemetry, metadata, controls, units, and identifiers use compact uppercase mono.
-- Density alternates intentionally: compact evidence and comparison tables sit beside large numeric signals and controlled negative space.
-- Syntax decoration such as `[ ANALYSIS INPUT ]`, run identifiers, revision labels, and restrained crosshair markers may clarify structure; arbitrary decorative telemetry is prohibited.
-- Subtle paper grain may be applied globally. Halftone effects are reserved for empty-state or report-header artwork and must not reduce text or chart legibility.
-- No gradients, glass panels, rounded cards, generic three-card rows, fake charts, or hand-built SVG icons.
-- Phosphor is the only icon family; icons remain secondary to labels and data.
-- Positive and negative values use shape, sign, label, and weight—not green/red alone. Aviation red remains reserved for actions and alerts.
-- Charts render only real structured mock values and include accessible textual summaries.
-- Loading skeletons mirror final compartments; errors are contextual; the empty state leads directly to ticker entry.
-- Mobile preserves the square, ruled visual system in one column, keeps the request action reachable, and exposes comparison content through labeled horizontal scrolling or accessible tabs.
+- A rigid 12-column blueprint grid, visible 1px compartment lines, square corners, no decorative charts, and no glass panels.
+- Macro headings establish task and report hierarchy; telemetry, metadata, controls, units, and identifiers use compact uppercase mono.
+- The analysis composer is primary before submission. After a terminal result, run status, report navigation, executive brief, opportunities, risks, and execution evidence lead the page; the composer becomes a clearly labelled follow-up action.
+- Validation feedback is placed beside its source field, the primary action is visually grouped with run readiness, and partial/failed states carry explicit contextual warnings.
+- Phosphor is the only icon family. Positive and negative values use signs, labels, and weight in addition to color.
+- Mobile keeps the ruled layout in one column, leaves the request action reachable, and exposes comparison content through labelled horizontal scrolling or accessible tabs.
 
 Primary dashboard regions:
 

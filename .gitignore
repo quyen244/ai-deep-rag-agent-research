@@ -18,3 +18,7 @@ test-results/
 *.tsbuildinfo
 .env.local
 dashboard/reports/
+
+# Runtime result stores; reviewed verification evidence is kept under artifacts/.
+outputs/
+dashboard/.e2e-results/

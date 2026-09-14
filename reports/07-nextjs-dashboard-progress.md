@@ -41,4 +41,4 @@ accessibility: 100
 best practices: 100
 ```
 
-The browser-driven test submitted a multi-ticker run to the local FastAPI fixture, verified the comparison table, and verified narrow viewport domain navigation. A fresh browser session reported zero console errors after the favicon was added.
+The browser-driven test now submits a multi-ticker run to the actual deterministic FastAPI application, then verifies the resulting comparison table and narrow viewport domain navigation. The request crosses the graph, executors, FastMCP, synthesizer, and JSON repository. A fresh browser session reported zero console errors after the favicon was added.
