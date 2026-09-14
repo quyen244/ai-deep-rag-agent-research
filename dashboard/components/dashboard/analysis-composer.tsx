@@ -24,6 +24,7 @@ interface AnalysisComposerProps {
   onDomainsChange: (domains: AnalysisDomain[]) => void;
   onSubmit: () => void;
   onThemeChange: (theme: "carbon" | "light") => void;
+  isFollowUp?: boolean;
 }
 
 export function AnalysisComposer({
@@ -37,6 +38,7 @@ export function AnalysisComposer({
   onDomainsChange,
   onSubmit,
   onThemeChange,
+  isFollowUp = false,
 }: AnalysisComposerProps) {
   function toggleDomain(domain: AnalysisDomain): void {
     onDomainsChange(form.domains.includes(domain) ? form.domains.filter((item) => item !== domain) : [...form.domains, domain]);
@@ -46,8 +48,8 @@ export function AnalysisComposer({
     <section className="composer" aria-labelledby="composer-title">
       <div className="composer__header">
         <div>
-          <p className="section-kicker">01 / Analysis composer</p>
-          <h2 id="composer-title">Open a research run</h2>
+          <p className="section-kicker">{isFollowUp ? "Next analysis" : "01 / Analysis composer"}</p>
+          <h2 id="composer-title">{isFollowUp ? "Run another analysis" : "Open a research run"}</h2>
           <p className="composer__supported">Supported symbols: AAPL, TSLA, MSFT</p>
         </div>
         <div className="theme-switch" aria-label="Color theme">
@@ -75,6 +77,7 @@ export function AnalysisComposer({
               aria-describedby={errors.request ? "request-error" : undefined}
               aria-invalid={Boolean(errors.request)}
             />
+            {errors.request ? <p className="field-error" id="request-error" role="alert">{errors.request}</p> : null}
           </div>
           <div className="field field--tickers">
             <label className="field-label" htmlFor="ticker-list">Ticker override <span className="field-label__hint">Optional, comma separated</span></label>
@@ -96,6 +99,7 @@ export function AnalysisComposer({
                 </label>
               ))}
             </div>
+            {errors.domains ? <p className="field-error" id="domains-error" role="alert">{errors.domains}</p> : null}
           </fieldset>
           <div className="field field--timeframe">
             <label className="field-label" htmlFor="timeframe">Timeframe</label>
@@ -118,10 +122,11 @@ export function AnalysisComposer({
             />
           </div>
         </div>
-        {errors.request ? <p className="field-error" id="request-error" role="alert">{errors.request}</p> : null}
-        {errors.domains ? <p className="field-error" id="domains-error" role="alert">{errors.domains}</p> : null}
         <div className="composer__actions">
-          <span className="elapsed" aria-live="polite">{isSubmitting ? `Analysis running: ${elapsedSeconds} s elapsed` : "One synchronous request per analysis"}</span>
+          <div className="composer__actions-copy">
+            <p className="action-kicker">Ready to analyze</p>
+            <span className="elapsed" aria-live="polite">{isSubmitting ? `Analysis running: ${elapsedSeconds} s elapsed` : "One synchronous request per analysis"}</span>
+          </div>
           <Button variant="primary" type="submit" disabled={isSubmitting}>
             {isSubmitting ? <SpinnerGap aria-hidden="true" size={17} /> : null}
             {isSubmitting ? "Running analysis" : "Analyze"}

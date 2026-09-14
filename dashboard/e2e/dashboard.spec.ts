@@ -8,7 +8,7 @@ test("submits a multi-ticker request against the FastAPI contract fixture", asyn
   await expect(page.getByRole("heading", { name: "Research brief" })).toBeVisible();
   await page.getByRole("tab", { name: "Comparison" }).click();
   await expect(page.getByRole("table")).toContainText("Price to earnings");
-  await expect(page.getByText("Preferred")).toBeVisible();
+  await expect(page.getByText("Preferred", { exact: true })).toBeVisible();
 });
 
 test("keeps navigation usable in a narrow viewport", async ({ page }) => {
@@ -18,5 +18,5 @@ test("keeps navigation usable in a narrow viewport", async ({ page }) => {
   await page.getByRole("button", { name: "Analyze" }).click();
 
   await page.getByRole("tab", { name: "Technical" }).click();
-  await expect(page.getByRole("heading", { name: "Technical" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Technical", exact: true })).toBeVisible();
 });

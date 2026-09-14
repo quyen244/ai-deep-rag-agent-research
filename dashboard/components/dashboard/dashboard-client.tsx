@@ -146,9 +146,11 @@ export function DashboardClient() {
   }
 
   const showFailedRun = result?.status === "failed" || (result !== null && result.report === null);
+  const showWorkspace = !isSubmitting && result !== null && !showFailedRun;
 
   return (
     <>
+      {showWorkspace && result ? <ResultWorkspace result={result} /> : null}
       <AnalysisComposer
         form={form}
         errors={fieldErrors}
@@ -160,12 +162,12 @@ export function DashboardClient() {
         onDomainsChange={updateDomains}
         onSubmit={() => void runAnalysis()}
         onThemeChange={setTheme}
+        isFollowUp={showWorkspace}
       />
       {isSubmitting ? <LoadingState elapsedSeconds={elapsedSeconds} /> : null}
       {!isSubmitting && error ? <ErrorState error={error} onRetry={() => void runAnalysis()} /> : null}
       {!isSubmitting && showFailedRun && result ? <><FailedRunState result={result} onRetry={() => void runAnalysis()} /><RawJsonDisclosure result={result} /></> : null}
       {!isSubmitting && !error && !result ? <EmptyState /> : null}
-      {!isSubmitting && result && !showFailedRun ? <ResultWorkspace result={result} /> : null}
       {error?.code === "offline" ? <p className="telemetry" style={{ padding: "0 1rem 1rem" }}><CloudSlash aria-hidden="true" size={14} /> BACKEND CONNECTION REQUIRED</p> : null}
     </>
   );
